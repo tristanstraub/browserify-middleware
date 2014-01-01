@@ -102,6 +102,18 @@ app.use('/opt/mod.js', browserify(['require-test'], {
   debug: false,
   external: ['require-test']
 }));
+app.use('/modObj.js', browserify([{'require-test': {expose: 'require-test-exposed'}}], {
+  cache: false,
+  gzip: false,
+  minify: false,
+  debug: true
+}));
+app.use('/opt/modObj.js', browserify([{'require-test': {expose: 'require-test-exposed'}}], {
+  cache: true,
+  gzip: true,
+  minify: true,
+  debug: false
+}));
 
 app.get('/dir/file.txt', function (req, res) {
   res.end('foo');
@@ -115,6 +127,24 @@ app.get('/dir/non-existant.js', function (req, res) {
 app.get('/opt/dir/non-existant.js', function (req, res) {
   res.end('bar');
 });
+
+
+app.get('/no-minify.js', browserify('./directory/no-minify.js', {
+  cache: false,
+  gzip: false,
+  minify: {
+    mangle: false
+  },
+  debug: true
+}));
+app.get('/opt/no-minify.js', browserify('./directory/no-minify.js', {
+  cache: true,
+  gzip: true,
+  minify: {
+    mangle: false
+  },
+  debug: false
+}));
 
 var port;
 (function () {
@@ -287,12 +317,31 @@ function test(optimised, get, it) {
         done();
       });
     });
+    it('makes require available (using module options object)', function (done) {
+      get('/modObj.js', optimised, function (err, res) {
+        if (err) return done(err);
+        vm.runInNewContext(res, {
+          console: {
+            log: function () {
+              throw new Error('Module should wait to be required');
+            }
+          }
+        });
+        vm.runInNewContext(res + '\nrequire("require-test-exposed");', {
+          console: {
+            log: function (res) {
+              assert.equal(res, 'required');
+              done();
+            }
+          }
+        });
+      });
+    });
   });
   describe('package', function () {
     it('makes require available', function (done) {
       get('/mod.js', optimised, function (err, res) {
         if (err) return done(err);
-        //assert.equal(res, '');
         vm.runInNewContext(res, {
           console: {
             log: function () {
@@ -326,6 +375,22 @@ function test(optimised, get, it) {
       });
     });
   });
+  describe('minify: options', function () {
+    it('passes options to uglifyjs', function (done) {
+      get('/no-minify.js', optimised, function (err, res) {
+        if (err) return done(err);
+        assert(/add\(foo,bar\){return foo\+bar}console\.log\(add\(1,2\)\)/.test(res));
+        vm.runInNewContext(res, {
+          console: {
+            log: function (res) {
+              assert.equal(res, 3);
+              done();
+            }
+          }
+        })
+      });
+    });
+  });
 }
 
 describe('In NODE_ENV=development (default)', function () {
@@ -342,7 +407,7 @@ describe('In NODE_ENV=production', function () {
 });
 
 describe('options.noParse', function () {
-  it('speeds things up by at least a factor of 10 (for jQuery)', function (done) {
+  it('speeds things up by at least a factor of 5 (for jQuery)', function (done) {
     this.slow(1000)
     this.timeout(10000)
     var start = new Date();
@@ -352,7 +417,7 @@ describe('options.noParse', function () {
       get('/file/jqnoparse.js', false, function (err, res) {
         if (err) return done(err);
         var end = new Date();
-        assert((middle - start) > (end - middle) * 10);
+        assert((middle - start) > (end - middle) * 5, 'Without noParse was ' + (middle - start) + ' with noParse was ' + (end - middle));
         done();
       });
     });

@@ -82,6 +82,10 @@ Return the middleware to serve a browserified version of all the files in a dire
 
 Return middleware that will expose `require` for each of the modules in the array.  This will work even if those modules are also in the `external` array.
 
+#### `browserify([{'module-d': {expose: 'dee'}}][, options])`
+
+Require `module-d` with custom options (to be passed on to browserify).  In this case `module-d` will be exposed as `dee`.  This can be mixed and matched with plain strings.  Note that these modules must not appear in the `external` array.
+
 ### `options` / `settings`
 
 The `options` passed to each middleware function override the defaults specified in `settings`.
@@ -174,7 +178,12 @@ If cache is any other `string` it will be sent directly to the client.
 
 #### minify
 
-If `minify` is `true`, UglifyJS will be used to minify the resulting code.  This is `true` by default in production.
+If `minify` is `true`, UglifyJS will be used to minify the resulting code.  This is `true` by default in production.  If you set it to an object, the object will be passed to uglify-js as [options](https://github.com/mishoo/UglifyJS2#the-simple-way):
+
+ - `warnings` (default `false`) - pass `true` to display compressor warnings
+ - `mangle` (default `true`) - pass `false` to skip mangling names
+ - `output` (default `null`) - pass an object to specify additional [output options](http://lisperator.net/uglifyjs/codegen). The defaults are optimized for best compression.
+ - `compress` (default `{}`) - pass `false` to skip compressing entirely.  Pass an object to specify custom [compressor options](http://lisperator.net/uglifyjs/compress).
 
 #### gzip
 
@@ -205,6 +214,8 @@ The remaining settings are all passed through to browserify, you should look at 
 - `options.noParse` - an array of module names that should not be parsed for `require` statements of node.js style globals, can speed up loading things like jQuery that are huge but never use `require`.
 - `options.standalone` - generate a standalone build (in a [umd](https://github.com/ForbesLindesay/umd) wrapper) with this name, you probably don't want this.
 - `options.extensions` - an array of optional extra extensions for the module lookup machinery to use when the extension has not been specified. By default browserify considers only `.js` and `.json` files in such cases.
+- `options.resolve` - lets you override the default resolution algorithm (e.g. use browserify to compile component modules)
+- `options.basedir` - this shouldn't be needed as browserify-middleware already resolves to absolute paths.
 
 You can optionally pass a single item instead of an array to any of the options that take an array.
 

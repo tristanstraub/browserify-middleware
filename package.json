@@ -1,9 +1,9 @@
 {
   "name": "browserify-middleware",
-  "version": "1.21.0",
+  "version": "2.2.0",
   "description": "express middleware for browserify v2",
   "scripts": {
-    "test": "mocha -R spec"
+    "test": "mocha -R spec -t 5000"
   },
   "repository": {
     "type": "git",
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "callsite": "~1.0.0",
-    "browserify": "~2.36.0",
+    "browserify": "~3.4.0",
     "uglify-js": "~2.4.0",
     "ms": "~0.6.1",
     "mold-source-map": "0.3.0",
